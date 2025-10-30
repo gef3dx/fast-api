@@ -1,0 +1,47 @@
+name: Deploy to Production
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.13'
+
+    - name: Install uv
+      run: curl -LsSf https://astral.sh/uv/install.sh | sh
+
+    - name: Install dependencies
+      run: |
+        uv sync
+
+    - name: Run database migrations
+      run: |
+        # Add your migration command here
+        echo "Running database migrations..."
+        # alembic upgrade head
+
+    - name: Deploy to server
+      run: |
+        echo "Deploying to production server..."
+        # Add your deployment steps here
+        # This could be:
+        # - Deploying to a cloud provider
+        # - Building a Docker image and pushing to registry
+        # - Using SSH to deploy to a server
+        # - Using a deployment tool like Ansible, etc.
+
+    - name: Health check
+      run: |
+        echo "Performing health check..."
+        # Add health check steps here
+        # Example: curl -f http://your-app-url/health
