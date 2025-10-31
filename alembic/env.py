@@ -9,7 +9,6 @@ from alembic import context
 
 # Импортируйте ваши модели
 from src.models.base import Base
-from src.models.users import Users
 
 # this is the Alembic Config object
 config = context.config
