@@ -7,6 +7,7 @@ class UserBase(BaseModel):
     """Базовая схема с общими полями"""
 
     email: EmailStr
+    name: str = Field(min_length=3, max_length=50, description="Username")
     user_name: str = Field(min_length=3, max_length=50, description="Username")
     first_name: str = Field(min_length=2, max_length=50, description="First name")
     last_name: str = Field(min_length=2, max_length=50, description="Last name")
@@ -28,7 +29,8 @@ class UserCreateSchemas(UserBase):
             "example": {
                 "email": "user@example.com",
                 "user_name": "johndoe",
-                "first_name": "John",
+                "name": "John",
+                "first_name": "john",
                 "last_name": "Doe",
                 "phone": "+79991234567",
                 "password": "SecurePass123!",
