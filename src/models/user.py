@@ -2,10 +2,10 @@ from typing import Optional
 
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import String, Boolean
-from src.models.base import BaseModelSql
+from models.base import BaseModelSql
 
 
-class Users(BaseModelSql):
+class UserModel(BaseModelSql):
     user_name: Mapped[str] = mapped_column(
         String(50),
         unique=True,
@@ -27,7 +27,7 @@ class Users(BaseModelSql):
         String(20),
         unique=True,
     )
-    password_hash: Mapped[str] = mapped_column(
+    hashed_password: Mapped[str] = mapped_column(
         String(255),
     )
     is_active: Mapped[bool] = mapped_column(

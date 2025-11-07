@@ -1,24 +1,33 @@
 import asyncio
 from logging.config import fileConfig
-
 from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
-
 from alembic import context
 
-# Импортируйте ваши модели
-from src.models.base import Base
+# Добавляем src в путь для корректных импортов
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+
+# Импортируем Base и модели
+from models.base import BaseModelSql
+from models import UserModel  # Импорт модели для регистрации
+from settings import config as app_config
 
 # this is the Alembic Config object
 config = context.config
+
+# Устанавливаем URL базы данных из настроек приложения
+config.set_main_option("sqlalchemy.url", app_config.database_url_asyncpg)
 
 # Interpret the config file for Python logging
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
 # add your model's MetaData object here for 'autogenerate' support
-target_metadata = Base.metadata
+target_metadata = BaseModelSql.metadata
 
 
 def run_migrations_offline() -> None:
@@ -58,12 +67,7 @@ async def run_async_migrations() -> None:
 
 def run_migrations_online() -> None:
     """Run migrations in 'online' mode."""
-    connectable = config.attributes.get("connection", None)
-
-    if connectable is None:
-        asyncio.run(run_async_migrations())
-    else:
-        do_run_migrations(connectable)
+    asyncio.run(run_async_migrations())
 
 
 if context.is_offline_mode():
