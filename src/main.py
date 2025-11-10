@@ -1,6 +1,7 @@
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from routers import user
 from database.postgres import async_engine
 
@@ -78,22 +79,29 @@ async def health_check():
     return {"status": "healthy", "database": "connected"}
 
 
-# Обработчик ошибок (опционально)
+# Обработчик ошибок 404 - ИСПРАВЛЕНО
 @app.exception_handler(404)
-async def not_found_handler(request, exc):
-    return {
-        "error": "Not Found",
-        "message": "The requested resource was not found",
-        "path": str(request.url),
-    }
+async def not_found_handler(request: Request, exc):
+    return JSONResponse(
+        status_code=404,
+        content={
+            "error": "Not Found",
+            "message": "The requested resource was not found",
+            "path": str(request.url),
+        },
+    )
 
 
+# Обработчик ошибок 500 - ИСПРАВЛЕНО
 @app.exception_handler(500)
-async def internal_error_handler(request, exc):
-    return {
-        "error": "Internal Server Error",
-        "message": "An internal error occurred. Please try again later.",
-    }
+async def internal_error_handler(request: Request, exc):
+    return JSONResponse(
+        status_code=500,
+        content={
+            "error": "Internal Server Error",
+            "message": "An internal error occurred. Please try again later.",
+        },
+    )
 
 
 if __name__ == "__main__":

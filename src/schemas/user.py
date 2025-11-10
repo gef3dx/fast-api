@@ -7,7 +7,6 @@ class UserBase(BaseModel):
     """Базовая схема с общими полями"""
 
     email: EmailStr
-    name: str = Field(min_length=3, max_length=50, description="Username")
     user_name: str = Field(min_length=3, max_length=50, description="Username")
     first_name: str = Field(min_length=2, max_length=50, description="First name")
     last_name: str = Field(min_length=2, max_length=50, description="Last name")
@@ -29,8 +28,7 @@ class UserCreateSchemas(UserBase):
             "example": {
                 "email": "user@example.com",
                 "user_name": "johndoe",
-                "name": "John",
-                "first_name": "john",
+                "first_name": "John",
                 "last_name": "Doe",
                 "phone": "+79991234567",
                 "password": "SecurePass123!",
@@ -43,6 +41,7 @@ class UserUpdateSchemas(BaseModel):
     """Схема для обновления пользователя (все поля опциональны)"""
 
     email: Optional[EmailStr] = None
+    name: Optional[str] = Field(None, min_length=2, max_length=100)  # Добавлено
     user_name: Optional[str] = Field(None, min_length=3, max_length=50)
     first_name: Optional[str] = Field(None, min_length=2, max_length=50)
     last_name: Optional[str] = Field(None, min_length=2, max_length=50)
@@ -53,7 +52,13 @@ class UserUpdateSchemas(BaseModel):
     is_active: Optional[bool] = None
 
     model_config = ConfigDict(
-        json_schema_extra={"example": {"first_name": "Jane", "phone": "+79991234568"}}
+        json_schema_extra={
+            "example": {
+                "first_name": "Jane",
+                "last_name": "Smith",
+                "phone": "+79991234568",
+            }
+        }
     )
 
 
@@ -62,19 +67,21 @@ class UserResponseSchemas(UserBase):
 
     id: int = Field(description="Database ID")
     uuid: UUID4 = Field(description="User UUID")
+    name: Optional[str] = Field(None, description="Full name")  # Добавлено
     is_active: bool = Field(default=True, description="User active status")
     is_admin: bool = Field(default=False, description="Admin privileges")
     created_at: datetime = Field(description="Registration date")
     updated_at: Optional[datetime] = Field(None, description="Last update date")
 
     model_config = ConfigDict(
-        from_attributes=True,  # Для работы с ORM моделями (было orm_mode в Pydantic v1)
+        from_attributes=True,
         json_schema_extra={
             "example": {
                 "id": 1,
                 "uuid": "123e4567-e89b-12d3-a456-426614174000",
                 "email": "user@example.com",
                 "user_name": "johndoe",
+                "name": "John Doe",
                 "first_name": "John",
                 "last_name": "Doe",
                 "phone": "+79991234567",
@@ -105,6 +112,7 @@ class UserListResponseSchemas(BaseModel):
                         "uuid": "123e4567-e89b-12d3-a456-426614174000",
                         "email": "user@example.com",
                         "user_name": "johndoe",
+                        "name": "John Doe",
                         "first_name": "John",
                         "last_name": "Doe",
                         "phone": "+79991234567",

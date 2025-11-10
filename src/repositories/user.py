@@ -2,7 +2,7 @@ from typing import Protocol, Optional, List
 from uuid import UUID
 from sqlalchemy import select, update, delete, func
 from sqlalchemy.ext.asyncio import AsyncSession
-from models import UserModel  # ваша SQLAlchemy модель
+from models import UserModel
 
 
 class UserRepository(Protocol):
@@ -12,8 +12,8 @@ class UserRepository(Protocol):
         """Создать нового пользователя"""
         ...
 
-    async def get_by_id(self, user_id: UUID) -> Optional[UserModel]:
-        """Получить пользователя по ID"""
+    async def get_by_uuid(self, user_uuid: UUID) -> Optional[UserModel]:
+        """Получить пользователя по UUID"""
         ...
 
     async def get_by_email(self, email: str) -> Optional[UserModel]:
@@ -24,15 +24,15 @@ class UserRepository(Protocol):
         """Получить список всех пользователей с пагинацией"""
         ...
 
-    async def update(self, user_id: UUID, **kwargs) -> Optional[UserModel]:
+    async def update(self, user_uuid: UUID, **kwargs) -> Optional[UserModel]:
         """Обновить данные пользователя"""
         ...
 
-    async def delete(self, user_id: UUID) -> bool:
+    async def delete(self, user_uuid: UUID) -> bool:
         """Удалить пользователя. Возвращает True если удален, False если не найден"""
         ...
 
-    async def exists(self, user_id: UUID) -> bool:
+    async def exists(self, user_uuid: UUID) -> bool:
         """Проверить существование пользователя"""
         ...
 
@@ -54,10 +54,11 @@ class ImpUserRepository:
         await self.session.refresh(user)
         return user
 
-    async def get_by_id(self, user_id: UUID) -> Optional[UserModel]:
-        """Получить пользователя по ID"""
+    async def get_by_uuid(self, user_uuid: UUID) -> Optional[UserModel]:
+        """Получить пользователя по UUID"""
+        # Преобразуем UUID в строку для сравнения
         result = await self.session.execute(
-            select(UserModel).where(UserModel.id == user_id)
+            select(UserModel).where(UserModel.uuid == str(user_uuid))
         )
         return result.scalar_one_or_none()
 
@@ -75,11 +76,11 @@ class ImpUserRepository:
         )
         return list(result.scalars().all())
 
-    async def update(self, user_id: UUID, **kwargs) -> Optional[UserModel]:
+    async def update(self, user_uuid: UUID, **kwargs) -> Optional[UserModel]:
         """Обновить данные пользователя"""
         stmt = (
             update(UserModel)
-            .where(UserModel.id == user_id)
+            .where(UserModel.uuid == str(user_uuid))
             .values(**kwargs)
             .returning(UserModel)
         )
@@ -87,17 +88,19 @@ class ImpUserRepository:
         await self.session.flush()
         return result.scalar_one_or_none()
 
-    async def delete(self, user_id: UUID) -> bool:
+    async def delete(self, user_uuid: UUID) -> bool:
         """Удалить пользователя. Возвращает True если удален, False если не найден"""
-        stmt = delete(UserModel).where(UserModel.id == user_id)
+        stmt = delete(UserModel).where(UserModel.uuid == str(user_uuid))
         result = await self.session.execute(stmt)
         await self.session.flush()
         return result.rowcount > 0
 
-    async def exists(self, user_id: UUID) -> bool:
+    async def exists(self, user_uuid: UUID) -> bool:
         """Проверить существование пользователя"""
         result = await self.session.execute(
-            select(func.count()).select_from(UserModel).where(UserModel.id == user_id)
+            select(func.count())
+            .select_from(UserModel)
+            .where(UserModel.uuid == str(user_uuid))
         )
         count = result.scalar()
         return count > 0

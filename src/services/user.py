@@ -36,20 +36,20 @@ class UserService(Protocol):
         ...
 
     async def update_user(
-        self, user_id: UUID, user_data: UserUpdateSchemas
+        self, user_uuid: UUID, user_data: UserUpdateSchemas
     ) -> UserResponseSchemas:
         """Обновить данные пользователя"""
         ...
 
-    async def delete_user(self, user_id: UUID) -> bool:
+    async def delete_user(self, user_uuid: UUID) -> bool:
         """Удалить пользователя"""
         ...
 
-    async def activate_user(self, user_id: UUID) -> UserResponseSchemas:
+    async def activate_user(self, user_uuid: UUID) -> UserResponseSchemas:
         """Активировать пользователя"""
         ...
 
-    async def deactivate_user(self, user_id: UUID) -> UserResponseSchemas:
+    async def deactivate_user(self, user_uuid: UUID) -> UserResponseSchemas:
         """Деактивировать пользователя"""
         ...
 
@@ -85,8 +85,13 @@ class ImpUserService:
                 detail="Email username must be at least 3 characters",
             )
 
-        # Хеширование пароля (если есть)
+        # Хеширование пароля и автогенерация name
         user_dict = user_data.model_dump()
+
+        # Автоматически генерируем полное имя, если его нет
+        if "name" not in user_dict or not user_dict.get("name"):
+            user_dict["name"] = f"{user_dict['first_name']} {user_dict['last_name']}"
+
         if "password" in user_dict:
             user_dict["hashed_password"] = hash_password(user_dict.pop("password"))
 
@@ -96,13 +101,13 @@ class ImpUserService:
 
         return UserResponseSchemas.model_validate(created_user)
 
-    async def get_user(self, user_id: UUID) -> UserResponseSchemas:
+    async def get_user(self, user_uuid: UUID) -> UserResponseSchemas:
         """Получить пользователя по ID"""
-        user = await self.repository.get_by_id(user_id)
+        user = await self.repository.get_by_uuid(user_uuid)
         if not user:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"User with id {user_id} not found",
+                detail=f"User with id {user_uuid} not found",
             )
         return UserResponseSchemas.model_validate(user)
 
@@ -133,22 +138,22 @@ class ImpUserService:
         return [UserResponseSchemas.model_validate(user) for user in users]
 
     async def update_user(
-        self, user_id: UUID, user_data: UserUpdateSchemas
+        self, user_uuid: UUID, user_data: UserUpdateSchemas
     ) -> UserResponseSchemas:
         """Обновить данные пользователя"""
         # Проверка существования
-        existing_user = await self.repository.get_by_id(user_id)
+        existing_user = await self.repository.get_by_uuid(user_uuid)
         if not existing_user:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"User with id {user_id} not found",
+                detail=f"User with id {user_uuid} not found",
             )
 
         # Если обновляется email, проверяем уникальность
         update_dict = user_data.model_dump(exclude_unset=True)
         if "email" in update_dict:
             email_user = await self.repository.get_by_email(update_dict["email"])
-            if email_user and email_user.id != user_id:
+            if email_user and email_user.id != user_uuid:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail="Email already in use",
@@ -158,20 +163,20 @@ class ImpUserService:
         if "password" in update_dict:
             update_dict["hashed_password"] = hash_password(update_dict.pop("password"))
 
-        updated_user = await self.repository.update(user_id, **update_dict)
+        updated_user = await self.repository.update(user_uuid, **update_dict)
         return UserResponseSchemas.model_validate(updated_user)
 
-    async def delete_user(self, user_id: UUID) -> bool:
+    async def delete_user(self, user_uuid: UUID) -> bool:
         """Удалить пользователя"""
         # Проверка существования
-        user = await self.repository.get_by_id(user_id)
+        user = await self.repository.get_by_uuid(user_uuid)
         if not user:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"User with id {user_id} not found",
+                detail=f"User with id {user_uuid} not found",
             )
 
-        # Бизнес-правило: нельзя удалить активного админа (пример)
+        # Бизнес-правило: нельзя удалить активного админа
         if (
             hasattr(user, "is_admin")
             and user.is_admin
@@ -183,15 +188,15 @@ class ImpUserService:
                 detail="Cannot delete active admin user",
             )
 
-        return await self.repository.delete(user_id)
+        return await self.repository.delete(user_uuid)
 
-    async def activate_user(self, user_id: UUID) -> UserResponseSchemas:
+    async def activate_user(self, user_uuid: UUID) -> UserResponseSchemas:
         """Активировать пользователя"""
-        user = await self.repository.get_by_id(user_id)
+        user = await self.repository.get_by_uuid(user_uuid)
         if not user:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"User with id {user_id} not found",
+                detail=f"User with id {user_uuid} not found",
             )
 
         if hasattr(user, "is_active") and user.is_active:
@@ -199,16 +204,16 @@ class ImpUserService:
                 status_code=status.HTTP_400_BAD_REQUEST, detail="User is already active"
             )
 
-        updated_user = await self.repository.update(user_id, is_active=True)
+        updated_user = await self.repository.update(user_uuid, is_active=True)
         return UserResponseSchemas.model_validate(updated_user)
 
-    async def deactivate_user(self, user_id: UUID) -> UserResponseSchemas:
+    async def deactivate_user(self, user_uuid: UUID) -> UserResponseSchemas:
         """Деактивировать пользователя"""
-        user = await self.repository.get_by_id(user_id)
+        user = await self.repository.get_by_uuid(user_uuid)
         if not user:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"User with id {user_id} not found",
+                detail=f"User with id {user_uuid} not found",
             )
 
         if hasattr(user, "is_active") and not user.is_active:
@@ -217,7 +222,7 @@ class ImpUserService:
                 detail="User is already inactive",
             )
 
-        updated_user = await self.repository.update(user_id, is_active=False)
+        updated_user = await self.repository.update(user_uuid, is_active=False)
         return UserResponseSchemas.model_validate(updated_user)
 
     async def get_active_users(
