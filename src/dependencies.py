@@ -1,9 +1,23 @@
-from typing import Annotated
+from typing import Annotated, AsyncGenerator
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
-from database.postgres import get_async_session
+from database.postgres import async_session_factory
+
 from repositories import UserRepository, ImpUserRepository
 from services import UserService, ImpUserService
+
+
+async def get_async_session() -> AsyncGenerator[AsyncSession, None]:
+    """Dependency для получения сессии БД"""
+    async with async_session_factory() as session:
+        try:
+            yield session
+            await session.commit()
+        except Exception:
+            await session.rollback()
+            raise
+        finally:
+            await session.close()
 
 
 def get_user_repository(
