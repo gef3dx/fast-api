@@ -2,7 +2,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from routers import user
+from routers import user, auth
 from database.postgres import async_engine
 
 
@@ -55,9 +55,8 @@ app.add_middleware(
 
 
 # Подключение роутеров
-app.include_router(
-    user.router, prefix="/api/v1", tags=["users"]  # Префикс для версионирования API
-)
+app.include_router(user.router, prefix="/api/v1", tags=["users"])
+app.include_router(auth.router, prefix="/api/v1", tags=["auth"])
 
 
 # Корневой эндпоинт

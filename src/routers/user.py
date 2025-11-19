@@ -1,8 +1,10 @@
 from fastapi import APIRouter, Depends, status
 from typing import Annotated, List
 from uuid import UUID
+
+from models import UserModel
 from services import UserService
-from dependencies import get_user_service
+from dependencies import get_user_service, get_current_user
 from schemas import UserCreateSchemas, UserUpdateSchemas, UserResponseSchemas
 
 router = APIRouter(prefix="/users", tags=["users"])
@@ -23,6 +25,7 @@ async def create_user(
 @router.get("/list", response_model=List[UserResponseSchemas])
 async def list_users(
     service: Annotated[UserService, Depends(get_user_service)],
+    current_user: Annotated[UserModel, Depends(get_current_user)],
     skip: int = 0,
     limit: int = 100,
 ) -> List[UserResponseSchemas]:

@@ -8,15 +8,18 @@ class Settings(BaseSettings):
     # Database PostgreSQL
     DB_HOST: str = "localhost"
     DB_PORT: int = 5432
-    DB_USER: str = "postgres"
-    DB_PASS: str = "postgres"
-    DB_NAME: str = "fastapi_db"
+    DB_USER: str = "myuser"
+    DB_PASS: str = "mypassword"
+    DB_NAME: str = "mydatabase"
 
-    # Database SQLite
-    DB_SQLITE: str = "database.db"
+    # JWT Settings
+    JWT_SECRET_KEY: str = "your-super-secret-key-change-in-production"
+    JWT_ALGORITHM: str = "HS256"
+    JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
+    JWT_REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 
     # App settings
-    app_name: str = "FastAPI test"
+    app_name: str = "FastAPI JWT Auth"
     debug: bool = True
 
     # CORS
@@ -26,15 +29,6 @@ class Settings(BaseSettings):
         "http://127.0.0.1:5173",
         "http://127.0.0.1:3000",
     ]
-
-    # Directories
-    static_dir: str = "static"
-    images_dir: str = "static/images"
-
-    @property
-    def database_url_sqlite(self) -> str:
-        """URL для SQLite базы данных"""
-        return f"sqlite+aiosqlite:///{self.DB_SQLITE}"
 
     @property
     def database_url_asyncpg(self) -> str:
